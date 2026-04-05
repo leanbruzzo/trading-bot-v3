@@ -11,7 +11,7 @@ from datetime import datetime
 
 from config.settings import (
     SYMBOLS, BOT_INTERVAL_SECONDS, SENTIMENT_WEIGHT, TECHNICAL_WEIGHT,
-    REGIME_WEIGHT, TP1_ROI_PCT, TP2_ROI_PCT, TP1_SIZE, TP2_SIZE,
+    REGIME_WEIGHT, TP1_PRICE_PCT, TP2_PRICE_PCT, TP1_SIZE, TP2_SIZE,
     SIGNAL_THRESHOLD, SIGNAL_REVERSAL_COOLDOWN
 )
 from modules.regime_detector    import detect_regime
@@ -160,7 +160,7 @@ def manage_open_trade(symbol: str, current_price: float, df: pd.DataFrame):
     trade = open_trades[symbol]
     side  = trade["side"]
 
-    # ── TP1: 2% ROI → cierra 50%, SL a breakeven ─────────────────────────────
+    # ── TP1: 2% precio → cierra 50%, SL a breakeven ──────────────────────────
     if not trade.get("partial1_done", False):
         hit_tp1 = (
             (side == "LONG"  and current_price >= trade["tp1"]) or
@@ -174,7 +174,7 @@ def manage_open_trade(symbol: str, current_price: float, df: pd.DataFrame):
                 register_pnl(pnl)
                 notify_trade_close(
                     symbol, side, trade["entry"], current_price,
-                    pnl, f"TP1 50% (+{TP1_ROI_PCT*100:.0f}% ROI) → SL a breakeven"
+                    pnl, f"TP1 50% (+{TP1_PRICE_PCT*100:.0f}% precio / +{TP1_PRICE_PCT*4*100:.0f}% ROI) → SL a breakeven"
                 )
                 logger.info(f"✅ TP1 {symbol} — P&L parcial: ${pnl:+.2f}")
                 open_trades[symbol]["partial1_done"] = True
@@ -184,7 +184,7 @@ def manage_open_trade(symbol: str, current_price: float, df: pd.DataFrame):
                 logger.info(f"🔒 SL movido a breakeven: ${trade['entry']}")
             return
 
-    # ── TP2: 3% ROI → cierra 50% del resto, SL a nivel TP1 ──────────────────
+    # ── TP2: 4% precio → cierra 50% del resto, SL a nivel TP1 ───────────────
     if trade.get("partial1_done", False) and not trade.get("partial2_done", False):
         hit_tp2 = (
             (side == "LONG"  and current_price >= trade["tp2"]) or
@@ -198,7 +198,7 @@ def manage_open_trade(symbol: str, current_price: float, df: pd.DataFrame):
                 register_pnl(pnl)
                 notify_trade_close(
                     symbol, side, trade["entry"], current_price,
-                    pnl, f"TP2 50% (+{TP2_ROI_PCT*100:.0f}% ROI) → SL a nivel TP1"
+                    pnl, f"TP2 50% (+{TP2_PRICE_PCT*100:.0f}% precio / +{TP2_PRICE_PCT*4*100:.0f}% ROI) → SL a nivel TP1"
                 )
                 logger.info(f"✅ TP2 {symbol} — P&L parcial: ${pnl:+.2f}")
                 open_trades[symbol]["partial2_done"] = True
@@ -337,8 +337,8 @@ def open_new_trade(symbol: str, direction: str, current_price: float, score: flo
         notify_trade_open(symbol, direction, entry, stop, tp2, size)
         send_message(
             f"📐 <b>Tamaño de posición:</b> {size_label} (score={score:.2f})\n"
-            f"🎯 <b>TP1 (+2% ROI):</b> ${calculate_tp1(entry, direction):,.4f} → cierra 50%\n"
-            f"🎯 <b>TP2 (+3% ROI):</b> ${calculate_tp2(entry, direction):,.4f} → cierra 25%\n"
+            f"🎯 <b>TP1 (+2% precio / +8% ROI):</b> ${calculate_tp1(entry, direction):,.4f} → cierra 50%\n"
+            f"🎯 <b>TP2 (+4% precio / +16% ROI):</b> ${calculate_tp2(entry, direction):,.4f} → cierra 25%\n"
             f"🚀 <b>Free ride:</b> trailing stop sobre 25% restante\n"
             f"🛑 <b>SL inicial:</b> ${stop:,.4f} (3.5%)"
         )
@@ -381,13 +381,13 @@ def emergency_close_all(reason: str):
 
 
 def run():
-    logger.info("🚀 Trading Bot V2 iniciado — 5x leverage | TP por %ROI")
+    logger.info("🚀 Trading Bot V3 iniciado — 4x leverage | TP por % precio")
     loaded = len(open_trades)
     send_message(
-        f"🚀 <b>Trading Bot V2</b>\n"
+        f"🚀 <b>Trading Bot V3</b>\n"
         f"Monitoreando: {', '.join(SYMBOLS)}\n"
-        f"📐 Umbral señal: {SIGNAL_THRESHOLD} | SL: 3.5% | Leverage: 5x\n"
-        f"🎯 TP1: +2% ROI (50%) → TP2: +3% ROI (25%) → Free ride\n"
+        f"📐 Umbral señal: {SIGNAL_THRESHOLD} | SL: 3.5% | Leverage: 4x\n"
+        f"🎯 TP1: +2% precio / +8% ROI (50%) → TP2: +4% precio / +16% ROI (25%) → Free ride\n"
         f"📂 Posiciones recuperadas: <b>{loaded}</b>"
     )
 

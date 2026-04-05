@@ -14,7 +14,7 @@ SCOPES = [
 ]
 
 SPREADSHEET_ID  = "11ktL1p2SdkJLsjFrepG_1bkeH20G6FzynnQ0eXT4KTk"
-STRATEGY_VERSION = "v2.0-roi-tp"
+STRATEGY_VERSION = "v3.0-price-tp"
 
 CREDENTIALS_INFO = {
     "type": "service_account",
@@ -42,7 +42,7 @@ def log_trade_to_sheets(trade: dict):
     """Agrega una fila con el trade cerrado a Google Sheets."""
     try:
         client = get_client()
-        sheet  = client.open_by_key(SPREADSHEET_ID).worksheet("bot-trading-v2")
+        sheet  = client.open_by_key(SPREADSHEET_ID).worksheet("bot-trading-v3")
 
         ao = trade.get("analysis_open", {})
 

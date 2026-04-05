@@ -39,7 +39,7 @@ def load_history_from_sheets():
         }
         creds  = Credentials.from_service_account_info(credentials_info, scopes=scopes)
         client = gspread.authorize(creds)
-        sheet  = client.open_by_key("11ktL1p2SdkJLsjFrepG_1bkeH20G6FzynnQ0eXT4KTk").worksheet("bot-trading-v2")
+        sheet  = client.open_by_key("11ktL1p2SdkJLsjFrepG_1bkeH20G6FzynnQ0eXT4KTk").worksheet("bot-trading-v3")
         rows   = sheet.get_all_records()
 
         history = []

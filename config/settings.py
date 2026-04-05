@@ -1,6 +1,6 @@
 # ============================================================
-#  TRADING BOT V2 — CONFIGURACIÓN CENTRAL
-#  Estrategia: 3-level TP basado en %ROI con trailing stop
+#  TRADING BOT V3 — CONFIGURACIÓN CENTRAL
+#  Estrategia: 3-level TP basado en % precio con trailing stop
 # ============================================================
 import os
 
@@ -29,12 +29,9 @@ FLASH_CRASH_PCT         = 0.10
 MAX_OPEN_POSITIONS      = 4
 CASH_RESERVE_PCT        = 0.10
 
-# --- TAKE PROFIT POR ROI ---
-# ROI% / leverage = % movimiento de precio necesario
-TP1_ROI_PCT             = 0.02        # 2% ROI
-TP2_ROI_PCT             = 0.03        # 3% ROI
-TP1_PRICE_PCT           = 0.005       # TP1_ROI_PCT / 4x = 0.005
-TP2_PRICE_PCT           = 0.0075      # TP2_ROI_PCT / 4x = 0.0075
+# --- TAKE PROFIT POR PRECIO ---
+TP1_PRICE_PCT           = 0.02        # 2% precio → 8% ROI con 4x
+TP2_PRICE_PCT           = 0.04        # 4% precio → 16% ROI con 4x
 TP1_SIZE                = 0.50        # cierra 50% en TP1
 TP2_SIZE                = 0.50        # cierra 50% del resto en TP2
 
