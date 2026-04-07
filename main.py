@@ -344,6 +344,49 @@ def open_new_trade(symbol: str, direction: str, current_price: float, score: flo
         )
 
 
+def manual_close_trade(symbol: str):
+    """Cierra una posición manualmente desde Telegram y la registra en Sheets."""
+    if symbol not in open_trades:
+        return
+    trade = open_trades[symbol]
+    side  = trade["side"]
+    price = get_current_price(symbol)
+    if not price:
+        return
+    order = close_position(symbol, side, trade["qty"])
+    if order:
+        pnl = (price - trade["entry"]) * trade["qty"]
+        if side == "SHORT":
+            pnl = -pnl
+        register_pnl(pnl)
+        notify_trade_close(symbol, side, trade["entry"], price, pnl, "Cierre manual")
+        opened_at = trade.get("opened_at", datetime.now().isoformat())
+        closed_at = datetime.now().isoformat()
+        duration  = (datetime.fromisoformat(closed_at) - datetime.fromisoformat(opened_at)).total_seconds() / 3600
+        save_trade_to_history({
+            "symbol":           symbol,
+            "side":             side,
+            "entry_price":      trade["entry"],
+            "exit_price":       price,
+            "qty":              trade["qty"],
+            "pnl":              round(pnl, 4),
+            "reason_close":     "Cierre manual",
+            "partial1_done":    trade.get("partial1_done", False),
+            "partial2_done":    trade.get("partial2_done", False),
+            "opened_at":        opened_at,
+            "closed_at":        closed_at,
+            "duration_hours":   round(duration, 2),
+            "analysis_open":    trade.get("analysis_open", {}),
+            "analysis_close":   {},
+        })
+        del open_trades[symbol]
+        save_open_trades(open_trades)
+        state = load_risk_state()
+        state["open_positions"] = len(open_trades)
+        save_risk_state(state)
+        logger.info(f"✅ Cierre manual {symbol} | P&L: ${pnl:+.2f}")
+
+
 def emergency_close_all(reason: str):
     logger.critical(f"🚨 CIERRE DE EMERGENCIA: {reason}")
     for symbol, trade in list(open_trades.items()):
@@ -394,7 +437,7 @@ def run():
     for symbol in SYMBOLS:
         setup_symbol(symbol)
 
-    start_command_listener(open_trades)
+    start_command_listener(open_trades, manual_close_trade)
 
     daily_trade_count = 0
     last_summary_date = datetime.now().date()

@@ -90,7 +90,21 @@ def handle_status_command(open_trades: dict):
     send_message("\n".join(lines))
 
 
-def poll_commands(open_trades: dict):
+def handle_close_command(text: str, open_trades: dict, close_callback):
+    """Cierra manualmente una posición por símbolo."""
+    parts = text.strip().split()
+    if len(parts) < 2:
+        send_message("❌ Uso: /close SYMBOL\nEjemplo: /close ETHUSDT")
+        return
+    symbol = parts[1].upper()
+    if symbol not in open_trades:
+        send_message(f"⚠️ No hay posición abierta en <b>{symbol}</b>")
+        return
+    send_message(f"⏳ Cerrando posición <b>{symbol}</b>...")
+    close_callback(symbol)
+
+
+def poll_commands(open_trades: dict, close_callback):
     """Escucha comandos de Telegram en un hilo separado."""
     global _last_update_id
     while True:
@@ -107,10 +121,13 @@ def poll_commands(open_trades: dict):
                 text = msg.get("text", "")
                 if text.startswith("/status"):
                     handle_status_command(open_trades)
+                elif text.startswith("/close"):
+                    handle_close_command(text, open_trades, close_callback)
                 elif text.startswith("/help"):
                     send_message(
                         "🤖 <b>Comandos disponibles:</b>\n"
                         "/status — Ver posiciones abiertas y P&L\n"
+                        "/close SYMBOL — Cerrar posición manualmente (ej: /close ETHUSDT)\n"
                         "/help — Ver esta ayuda"
                     )
         except Exception as e:
@@ -119,9 +136,9 @@ def poll_commands(open_trades: dict):
             time.sleep(10)
 
 
-def start_command_listener(open_trades: dict):
+def start_command_listener(open_trades: dict, close_callback):
     """Inicia el listener de comandos en un hilo separado."""
-    t = threading.Thread(target=poll_commands, args=(open_trades,), daemon=True)
+    t = threading.Thread(target=poll_commands, args=(open_trades, close_callback), daemon=True)
     t.start()
     logger.info("✅ Listener de comandos Telegram iniciado")
 
